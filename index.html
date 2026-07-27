@@ -1,0 +1,2391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家計簿</title>
+<link rel="icon" href="icon-512.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="家計簿">
+<meta name="theme-color" content="#FBF6EC">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FBF6EC;
+  --paper-line:#E7DCC6;
+  --ink:#332B22;
+  --ink-soft:#6b6152;
+  --sakura:#E8A0AE;
+  --sakura-deep:#D3728A;
+  --indigo:#48588C;
+  --indigo-deep:#333F68;
+  --hanko:#B23A48;
+  --sage:#6B8E6B;
+  --sage-deep:#4F7051;
+  --amber:#C98A3A;
+  --card:#FFFDF8;
+  --shadow: 0 2px 10px rgba(90,70,40,0.08), 0 1px 2px rgba(90,70,40,0.06);
+  --radius: 14px;
+  /* seasonal tab colors */
+  --s-spring:#E8A0AE;
+  --s-fresh:#7FA66B;
+  --s-summer:#4E90B8;
+  --s-autumn:#C98A3A;
+}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%; font-size:18px;}
+body{
+  margin:0;
+  font-family:'Zen Kaku Gothic New','Hiragino Sans','Yu Gothic',sans-serif;
+  color:var(--ink);
+  background:
+    repeating-linear-gradient(var(--paper) 0 27px, var(--paper-line) 27px 28px),
+    var(--paper);
+  background-attachment: local;
+  min-height:100vh;
+  line-height:1.6;
+}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important; animation:none !important;}
+}
+a{color:inherit;}
+button{font-family:inherit;}
+h1,h2,h3{font-family:'Zen Maru Gothic',sans-serif; margin:0 0 .4em;}
+.num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum";}
+
+/* ---------- layout ---------- */
+.app-shell{max-width:960px;margin:0 auto;padding:0 16px 64px;}
+header.top{
+  position:sticky; top:0; z-index:30;
+  background:var(--paper);
+  border-bottom:2px solid var(--ink);
+  padding:10px 16px;
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  row-gap:8px;
+}
+@media (max-width:480px){
+  header.top{padding:8px 12px;}
+  .brand-text{font-size:1rem;}
+  .hanko-mark{width:32px;height:32px;font-size:12px;}
+  .sync-badge{order:5; width:100%; text-align:right;}
+}
+.brand{
+  display:flex; align-items:center; gap:10px; margin-right:auto;
+  cursor:pointer; user-select:none;
+}
+.hanko-mark{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--hanko);
+  color:#fff8f0; display:flex;align-items:center;justify-content:center;
+  font-family:'Zen Maru Gothic',sans-serif; font-weight:900; font-size:15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  transform:rotate(-6deg);
+  flex-shrink:0;
+}
+.brand-text{font-family:'Zen Maru Gothic',sans-serif; font-weight:900; font-size:1.15rem; letter-spacing:.02em;}
+.brand-text small{display:block; font-family:'Zen Kaku Gothic New',sans-serif; font-weight:400; font-size:.62rem; color:var(--ink-soft); letter-spacing:.05em;}
+
+.nav-btn{
+  border:1.5px solid var(--ink); background:var(--card); color:var(--ink);
+  border-radius:20px; padding:6px 13px; font-size:.82rem; font-weight:500;
+  cursor:pointer; white-space:nowrap;
+}
+.nav-btn.active{background:var(--ink); color:var(--paper);}
+.nav-btn.ghost{border-color:transparent; background:transparent;}
+select.month-select{
+  border:1.5px solid var(--ink); background:var(--card); color:var(--ink);
+  border-radius:20px; padding:6px 10px; font-size:.82rem; font-weight:500; cursor:pointer;
+}
+.sync-badge{font-size:.68rem; color:var(--ink-soft); white-space:nowrap;}
+
+main{padding-top:18px;}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--paper-line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:18px 18px 20px;
+  margin-bottom:16px;
+  position:relative;
+}
+.washi{
+  position:absolute; top:-10px; left:22px; width:64px; height:22px;
+  background:repeating-linear-gradient(45deg, var(--sakura) 0 6px, var(--sakura-deep) 6px 12px);
+  opacity:.85; transform:rotate(-3deg);
+  border-radius:2px;
+  box-shadow:0 1px 2px rgba(0,0,0,.15);
+}
+.card h2{font-size:1.02rem; display:flex; align-items:center; gap:8px;}
+.card .hint{font-size:.76rem; color:var(--ink-soft); margin:-6px 0 12px;}
+
+/* month tabs (seasonal) */
+.tabbar{display:flex; gap:6px; overflow-x:auto; padding:4px 2px 10px; -webkit-overflow-scrolling:touch;}
+.tabbar::-webkit-scrollbar{height:5px;}
+.tabbar button{
+  flex:0 0 auto; border:none; border-bottom:4px solid transparent;
+  background:var(--card); border-radius:10px 10px 0 0;
+  padding:7px 12px; font-size:.8rem; font-weight:700; color:var(--ink-soft);
+  cursor:pointer; font-family:'Zen Maru Gothic',sans-serif;
+}
+.tabbar button.active{color:var(--ink); background:#fff;}
+
+/* summary grid */
+.sum-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px;}
+.sum-item{
+  background:var(--paper); border:1px solid var(--paper-line); border-radius:10px;
+  padding:10px 12px;
+}
+.sum-item .lbl{font-size:.72rem; color:var(--ink-soft); font-weight:500;}
+.sum-item .val{font-size:1.25rem; font-weight:700; font-family:'Zen Maru Gothic',sans-serif;}
+.sum-item.plus .val{color:var(--sage-deep);}
+.sum-item.minus .val{color:var(--hanko);}
+
+/* tables */
+table.ledger{width:100%; border-collapse:collapse; font-size:.86rem;}
+table.ledger th{
+  text-align:left; font-weight:500; color:var(--ink-soft); font-size:.72rem;
+  border-bottom:1.5px solid var(--ink); padding:4px 6px;
+}
+table.ledger td{padding:5px 6px; border-bottom:1px dashed var(--paper-line); vertical-align:middle;}
+table.ledger tr:last-child td{border-bottom:none;}
+table.ledger td.amt{text-align:right;}
+table.ledger tfoot td{border-top:2px solid var(--ink); border-bottom:none; font-weight:700; padding-top:8px;}
+
+/* 固定費テーブルはスマホ幅でカード風に積み上げる（項目/金額/方法を横スクロールなしで） */
+@media (max-width:600px){
+  table.ledger.ledger-items thead{display:none;}
+  table.ledger.ledger-items, table.ledger.ledger-items tbody, table.ledger.ledger-items tr{display:block; width:100%;}
+  table.ledger.ledger-items td{display:block; border:none; padding:3px 0;}
+  table.ledger.ledger-items tr{
+    display:grid;
+    grid-template-columns:1fr auto;
+    grid-template-areas:"item item" "amount method" "del del";
+    gap:4px 8px;
+    padding:10px 0;
+    border-bottom:1px dashed var(--paper-line);
+    align-items:center;
+  }
+  table.ledger.ledger-items tr:last-child{border-bottom:none;}
+  table.ledger.ledger-items td.item-cell{grid-area:item;}
+  table.ledger.ledger-items td.amt{grid-area:amount; text-align:left;}
+  table.ledger.ledger-items td.method-cell{grid-area:method;}
+  table.ledger.ledger-items td:last-child:not(.item-cell):not(.amt):not(.method-cell){grid-area:del; text-align:right;}
+  table.ledger.ledger-items .amt-input{width:100%;}
+  table.ledger.ledger-items tfoot tr{display:flex; justify-content:space-between; border-top:2px solid var(--ink); padding-top:8px;}
+  table.ledger.ledger-items tfoot td{border:none; padding:0;}
+}
+
+input[type=text], input[type=number], select, textarea{
+  font-family:inherit; border:1.5px solid #c9bfa8; border-radius:8px;
+  padding:6px 8px; font-size:.86rem; background:#fffef9; color:var(--indigo-deep);
+  width:100%;
+}
+input[type=number]{color:var(--indigo-deep); font-weight:600;}
+input:focus, select:focus, textarea:focus{outline:3px solid #4E90B855; border-color:var(--indigo);}
+.row-item-input{min-width:90px;}
+.amt-input{width:110px; text-align:right;}
+.method-select{min-width:120px;}
+td.item-cell{width:32%;}
+td.method-cell{width:28%;}
+
+.btn{
+  border:1.5px solid var(--ink); background:var(--card); border-radius:9px;
+  padding:7px 14px; font-size:.82rem; font-weight:700; cursor:pointer;
+  font-family:'Zen Maru Gothic',sans-serif;
+}
+.btn.primary{background:var(--indigo); border-color:var(--indigo-deep); color:#fff;}
+.btn.danger{background:var(--card); border-color:var(--hanko); color:var(--hanko);}
+.btn.small{padding:4px 10px; font-size:.74rem;}
+.btn:disabled{opacity:.45; cursor:not-allowed;}
+.btn-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+
+.del-btn{background:none;border:none;color:var(--hanko);cursor:pointer;font-size:1rem;padding:2px 6px;}
+
+textarea{min-height:70px; resize:vertical;}
+
+/* budget bar */
+.bud-bar-track{background:var(--paper); border:1px solid var(--paper-line); border-radius:8px; height:14px; overflow:hidden; position:relative;}
+.bud-bar-fill{height:100%; background:var(--sage); border-radius:8px 0 0 8px;}
+.bud-bar-fill.over{background:var(--hanko);}
+.bud-row{display:grid; grid-template-columns:52px 1fr 90px; gap:10px; align-items:center; padding:6px 0; font-size:.82rem;}
+.bud-row .amt{text-align:right; font-weight:600;}
+
+/* year table scroll */
+.table-scroll{overflow-x:auto;}
+table.year-tbl{border-collapse:collapse; font-size:.8rem; min-width:760px; width:100%;}
+table.year-tbl th, table.year-tbl td{padding:6px 8px; text-align:right; white-space:nowrap;}
+table.year-tbl th:first-child, table.year-tbl td:first-child{text-align:left; position:sticky; left:0; background:var(--card);}
+table.year-tbl thead th{border-bottom:2px solid var(--ink); font-weight:700; color:var(--ink-soft); font-size:.72rem;}
+table.year-tbl tbody tr td{border-bottom:1px dashed var(--paper-line);}
+table.year-tbl tfoot td{border-top:2px solid var(--ink); font-weight:700;}
+table.year-tbl td.total-col{font-weight:700; color:var(--indigo-deep);}
+
+.jump-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(60px,1fr)); gap:8px;}
+.jump-grid button{border:1.5px solid var(--ink); border-radius:10px; background:var(--card); padding:8px 4px; font-weight:700; cursor:pointer; font-family:'Zen Maru Gothic',sans-serif;}
+
+.help-block{margin-bottom:14px;}
+.help-block h3{font-size:.92rem;}
+.help-block p, .help-block li{font-size:.86rem; color:var(--ink-soft);}
+
+.form-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.form-grid.one{grid-template-columns:1fr;}
+.field label{display:block; font-size:.74rem; color:var(--ink-soft); margin-bottom:4px; font-weight:500;}
+@media (max-width:560px){.form-grid{grid-template-columns:1fr;}}
+
+.status-msg{font-size:.8rem; border-radius:8px; padding:8px 12px; margin-top:8px;}
+.status-msg.ok{background:#eef5ea; color:var(--sage-deep); border:1px solid #cfe3c6;}
+.status-msg.err{background:#fbeceb; color:var(--hanko); border:1px solid #f0c9c8;}
+.status-msg.info{background:#eaf0f7; color:var(--indigo-deep); border:1px solid #c9d6ea;}
+
+.pill-list{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+.pill{background:var(--paper); border:1px solid var(--paper-line); border-radius:20px; padding:4px 10px 4px 12px; font-size:.78rem; display:flex; align-items:center; gap:6px;}
+.pill button{border:none;background:none;color:var(--hanko);cursor:pointer;font-weight:700;}
+
+footer.foot{text-align:center; font-size:.72rem; color:var(--ink-soft); margin-top:30px;}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="top">
+    <div class="brand" onclick="go('year')">
+      <div class="hanko-mark">家計</div>
+      <div class="brand-text">家計簿 <span id="yearLabel">2026</span><small id="brandSub">給与日前と月末、月2回入力</small></div>
+    </div>
+    <select class="month-select" id="yearSelect" onchange="switchYear(this.value)"></select>
+    <select class="month-select" id="monthJump" onchange="if(this.value)go(this.value)">
+      <option value="">月を選ぶ</option>
+    </select>
+    <span class="sync-badge" id="headerSync" onclick="go('settings')" style="cursor:pointer;"></span>
+    <button class="nav-btn ghost" onclick="go('settings')">設定</button>
+    <button class="nav-btn ghost" onclick="go('help')">使い方</button>
+  </header>
+
+  <main id="main"></main>
+
+  <footer class="foot">家計簿 ・ このページのデータはこの端末とGitHubリポジトリに保存されます</footer>
+</div>
+
+<script>
+/* ====================== 定数・シード ====================== */
+const STORAGE_KEY = 'kakeibo2026_data_v1';
+const CFG_KEY = 'kakeibo2026_github_v1';
+const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const SEASON = m => (m<=3?'s-spring': m<=6?'s-fresh': m<=9?'s-summer':'s-autumn');
+
+const SEED_MONTHS = {
+  "1": {
+    "incomeA": 0,
+    "incomeB": 0,
+    "fixedA": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "奨学金",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "NHK",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "水道",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "ガス",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "電気",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "母費",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "千絢 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "絢斗 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      }
+    ],
+    "fixedB": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "あいきっず",
+        "amount": 0,
+        "method": "ゆうちょ経由"
+      },
+      {
+        "item": "公文",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "旅行積立",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      }
+    ],
+    "food": {
+      "paypay": 0,
+      "cash": 0
+    },
+    "memo": ""
+  },
+  "2": {
+    "incomeA": 0,
+    "incomeB": 0,
+    "fixedA": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "奨学金",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "NHK",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "水道",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "ガス",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "電気",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "母費",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "千絢 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "絢斗 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      }
+    ],
+    "fixedB": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "あいきっず",
+        "amount": 0,
+        "method": "ゆうちょ経由"
+      },
+      {
+        "item": "公文",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "旅行積立",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      }
+    ],
+    "food": {
+      "paypay": 0,
+      "cash": 0
+    },
+    "memo": ""
+  },
+  "3": {
+    "incomeA": 0,
+    "incomeB": 0,
+    "fixedA": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "奨学金",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "NHK",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "水道",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "ガス",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "電気",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "母費",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "千絢 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "絢斗 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      }
+    ],
+    "fixedB": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "あいきっず",
+        "amount": 0,
+        "method": "ゆうちょ経由"
+      },
+      {
+        "item": "公文",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "旅行積立",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      }
+    ],
+    "food": {
+      "paypay": 0,
+      "cash": 0
+    },
+    "memo": ""
+  },
+  "4": {
+    "incomeA": 0,
+    "incomeB": 0,
+    "fixedA": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "奨学金",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "NHK",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "水道",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "ガス",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "電気",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "母費",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "千絢 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "絢斗 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      }
+    ],
+    "fixedB": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "あいきっず",
+        "amount": 0,
+        "method": "ゆうちょ経由"
+      },
+      {
+        "item": "公文",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "旅行積立",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      }
+    ],
+    "food": {
+      "paypay": 0,
+      "cash": 0
+    },
+    "memo": ""
+  },
+  "5": {
+    "incomeA": 0,
+    "incomeB": 0,
+    "fixedA": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "奨学金",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "NHK",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "水道",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "ガス",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "電気",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "母費",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "千絢 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "絢斗 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      }
+    ],
+    "fixedB": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "あいきっず",
+        "amount": 0,
+        "method": "ゆうちょ経由"
+      },
+      {
+        "item": "公文",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "旅行積立",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      }
+    ],
+    "food": {
+      "paypay": 0,
+      "cash": 0
+    },
+    "memo": ""
+  },
+  "6": {
+    "incomeA": 0,
+    "incomeB": 0,
+    "fixedA": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "奨学金",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "NHK",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "水道",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "ガス",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "電気",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "母費",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "千絢 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "絢斗 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      }
+    ],
+    "fixedB": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "あいきっず",
+        "amount": 0,
+        "method": "ゆうちょ経由"
+      },
+      {
+        "item": "公文",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "旅行積立",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      }
+    ],
+    "food": {
+      "paypay": 0,
+      "cash": 0
+    },
+    "memo": ""
+  },
+  "7": {
+    "incomeA": 0,
+    "incomeB": 0,
+    "fixedA": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "奨学金",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "NHK",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "水道",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "ガス",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "電気",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "母費",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "千絢 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "絢斗 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      }
+    ],
+    "fixedB": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "あいきっず",
+        "amount": 0,
+        "method": "ゆうちょ経由"
+      },
+      {
+        "item": "公文",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "旅行積立",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      }
+    ],
+    "food": {
+      "paypay": 0,
+      "cash": 0
+    },
+    "memo": ""
+  },
+  "8": {
+    "incomeA": 0,
+    "incomeB": 0,
+    "fixedA": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "奨学金",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "NHK",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "水道",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "ガス",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "電気",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "母費",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "千絢 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "絢斗 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      }
+    ],
+    "fixedB": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "あいきっず",
+        "amount": 0,
+        "method": "ゆうちょ経由"
+      },
+      {
+        "item": "公文",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "旅行積立",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      }
+    ],
+    "food": {
+      "paypay": 0,
+      "cash": 0
+    },
+    "memo": ""
+  },
+  "9": {
+    "incomeA": 0,
+    "incomeB": 0,
+    "fixedA": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "奨学金",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "NHK",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "水道",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "ガス",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "電気",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "母費",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "千絢 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "絢斗 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      }
+    ],
+    "fixedB": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "あいきっず",
+        "amount": 0,
+        "method": "ゆうちょ経由"
+      },
+      {
+        "item": "公文",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "旅行積立",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      }
+    ],
+    "food": {
+      "paypay": 0,
+      "cash": 0
+    },
+    "memo": ""
+  },
+  "10": {
+    "incomeA": 0,
+    "incomeB": 0,
+    "fixedA": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "奨学金",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "NHK",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "水道",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "ガス",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "電気",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "母費",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "千絢 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "絢斗 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      }
+    ],
+    "fixedB": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "あいきっず",
+        "amount": 0,
+        "method": "ゆうちょ経由"
+      },
+      {
+        "item": "公文",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "旅行積立",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      }
+    ],
+    "food": {
+      "paypay": 0,
+      "cash": 0
+    },
+    "memo": ""
+  },
+  "11": {
+    "incomeA": 0,
+    "incomeB": 0,
+    "fixedA": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "奨学金",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "NHK",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "水道",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "ガス",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "電気",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "母費",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "千絢 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "絢斗 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      }
+    ],
+    "fixedB": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "あいきっず",
+        "amount": 0,
+        "method": "ゆうちょ経由"
+      },
+      {
+        "item": "公文",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "旅行積立",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      }
+    ],
+    "food": {
+      "paypay": 0,
+      "cash": 0
+    },
+    "memo": ""
+  },
+  "12": {
+    "incomeA": 0,
+    "incomeB": 0,
+    "fixedA": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "奨学金",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "NHK",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "水道",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "ガス",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "電気",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(孝)引落"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "母費",
+        "amount": 0,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "千絢 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      },
+      {
+        "item": "絢斗 貯蓄",
+        "amount": 5000,
+        "method": "巣鴨(孝)引出"
+      }
+    ],
+    "fixedB": [
+      {
+        "item": "ローン",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "保険料",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      },
+      {
+        "item": "あいきっず",
+        "amount": 0,
+        "method": "ゆうちょ経由"
+      },
+      {
+        "item": "公文",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "おこづかい",
+        "amount": 0,
+        "method": "巣鴨(仁)引出"
+      },
+      {
+        "item": "旅行積立",
+        "amount": 0,
+        "method": "UFJ経由"
+      },
+      {
+        "item": "通信",
+        "amount": 0,
+        "method": "巣鴨(仁)引落"
+      }
+    ],
+    "food": {
+      "paypay": 0,
+      "cash": 0
+    },
+    "memo": ""
+  }
+};
+
+function defaultData(){
+  return {
+    version:2,
+    currentYear:2026,
+    settings:{
+      personA:'孝幸',
+      personB:'仁美',
+      paymentMethods:['巣鴨(孝)引落','巣鴨(孝)引出','巣鴨(仁)引落','巣鴨(仁)引出','UFJ経由','ゆうちょ経由','PayPay','現金'],
+      monthlyBudget:123000
+    },
+    years: {
+      "2026": { months: JSON.parse(JSON.stringify(SEED_MONTHS)) }
+    }
+  };
+}
+
+/* 旧形式（年が1つ固定・DATA.months直下）を新形式（DATA.years[年].months）に変換 */
+function migrateData(d){
+  if(!d) return d;
+  if(d.years) return d;
+  if(d.months){
+    const year = Number(d.year) || 2026;
+    return {
+      version:2,
+      currentYear: year,
+      settings: d.settings,
+      years: { [String(year)]: { months: d.months } }
+    };
+  }
+  return d;
+}
+
+/* ====================== データ読み書き ====================== */
+var DATA = loadLocal() || defaultData();
+var DIRTY = false; // ローカル変更が未コミットか
+
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return null;
+    const d = migrateData(JSON.parse(raw));
+    if(!d || !d.years || !d.years[String(d.currentYear)]) return null;
+    return d;
+  }catch(e){ return null; }
+}
+function currentMonths(){
+  return DATA.years[String(DATA.currentYear)].months;
+}
+function saveLocal(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+  DIRTY = true;
+  updateSyncBadge();
+}
+function loadCfg(){
+  try{ return JSON.parse(localStorage.getItem(CFG_KEY)) || {}; }catch(e){ return {}; }
+}
+function saveCfg(cfg){ localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }
+
+function fmtYen(n){
+  n = Math.round(Number(n)||0);
+  const s = Math.abs(n).toLocaleString('ja-JP');
+  return (n<0?'-':'') + '¥' + s;
+}
+function fmtDateTime(iso){
+  if(!iso) return '未同期';
+  const d = new Date(iso);
+  return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+/* ====================== 計算 ====================== */
+function calcMonth(mKey){
+  const m = currentMonths()[mKey];
+  if(!m) return null;
+  const incomeA = Number(m.incomeA)||0;
+  const incomeB = Number(m.incomeB)||0;
+  const income = incomeA + incomeB;
+  const fixedATotal = m.fixedA.reduce((s,r)=>s+(Number(r.amount)||0),0);
+  const fixedBTotal = m.fixedB.reduce((s,r)=>s+(Number(r.amount)||0),0);
+  const fixed = fixedATotal + fixedBTotal;
+  const paypay = Number(m.food.paypay)||0;
+  const cash = Number(m.food.cash)||0;
+  const food = paypay + cash;
+  const expense = fixed + food;
+  const savings = income - expense;
+
+  const byMethod = {};
+  DATA.settings.paymentMethods.forEach(pm=>byMethod[pm]=0);
+  [...m.fixedA, ...m.fixedB].forEach(r=>{
+    const key = r.method || '(未設定)';
+    byMethod[key] = (byMethod[key]||0) + (Number(r.amount)||0);
+  });
+  byMethod['PayPay'] = (byMethod['PayPay']||0) + paypay;
+  byMethod['現金'] = (byMethod['現金']||0) + cash;
+  const byMethodTotal = Object.values(byMethod).reduce((a,b)=>a+b,0);
+
+  const budget = Number(DATA.settings.monthlyBudget)||0;
+  const budgetDiff = budget - food;
+
+  return {incomeA, incomeB, income, fixedATotal, fixedBTotal, fixed, paypay, cash, food, expense, savings, byMethod, byMethodTotal, budget, budgetDiff};
+}
+
+/* ====================== ルーター ====================== */
+function go(view){
+  location.hash = view;
+}
+window.addEventListener('hashchange', render);
+
+function currentView(){
+  return (location.hash || '#year').slice(1);
+}
+
+function render(){
+  const view = currentView();
+  document.getElementById('yearLabel').textContent = DATA.currentYear;
+  document.title = '家計簿 ' + DATA.currentYear;
+  fillYearSelect();
+  fillMonthJump(view);
+  const main = document.getElementById('main');
+  if(view === 'year'){ main.innerHTML = renderYear(); afterYearRender(); }
+  else if(view === 'settings'){ main.innerHTML = renderSettings(); afterSettingsRender(); }
+  else if(view === 'help'){ main.innerHTML = renderHelp(); }
+  else if(/^m(\d{1,2})$/.test(view)){
+    const mi = parseInt(view.match(/^m(\d{1,2})$/)[1],10);
+    if(mi>=1 && mi<=12){ main.innerHTML = renderMonth(mi); afterMonthRender(mi); }
+    else { main.innerHTML = '<div class="card">ページが見つかりません</div>'; }
+  } else {
+    main.innerHTML = renderYear(); afterYearRender();
+  }
+  window.scrollTo({top:0, behavior:'instant' in window ? 'instant':'auto'});
+}
+
+function fillYearSelect(){
+  const sel = document.getElementById('yearSelect');
+  if(!sel) return;
+  const years = Object.keys(DATA.years).map(Number).sort((a,b)=>a-b);
+  sel.innerHTML = years.map(y=>`<option value="${y}" ${y===DATA.currentYear?'selected':''}>${y}年</option>`).join('');
+}
+function switchYear(y){
+  y = Number(y);
+  if(!DATA.years[String(y)]) return;
+  DATA.currentYear = y;
+  saveLocal();
+  render();
+}
+function fillMonthJump(view){
+  const sel = document.getElementById('monthJump');
+  sel.innerHTML = '<option value="">月を選ぶ</option>' +
+    MONTH_NAMES.map((n,i)=>`<option value="m${i+1}" ${view==='m'+(i+1)?'selected':''}>${n}</option>`).join('');
+}
+
+/* ====================== 年間サマリー ====================== */
+function renderYear(){
+  const rows = [
+    {key:'income', label:'収入合計'},
+    {key:'fixed', label:'固定費合計'},
+    {key:'food', label:'食費・日用品'},
+    {key:'expense', label:'支出合計'},
+    {key:'savings', label:'差引（貯蓄）'}
+  ];
+  const calcs = MONTH_NAMES.map((_,i)=>calcMonth(String(i+1)));
+
+  const theadCells = MONTH_NAMES.map(n=>`<th>${n}</th>`).join('') + '<th class="total-col">年間合計</th>';
+  const bodyRows = rows.map(r=>{
+    const cells = calcs.map(c=>`<td class="${r.key==='savings'? (c.savings<0?'minus':'') : ''}">${fmtYen(c[r.key])}</td>`).join('');
+    const total = calcs.reduce((s,c)=>s+c[r.key],0);
+    return `<tr><td>${r.label}</td>${cells}<td class="total-col">${fmtYen(total)}</td></tr>`;
+  }).join('');
+
+  const budget = Number(DATA.settings.monthlyBudget)||0;
+  const budgetRows = MONTH_NAMES.map((n,i)=>{
+    const c = calcs[i];
+    const pct = budget>0 ? Math.min(150, Math.round(c.food/budget*100)) : 0;
+    const over = c.food > budget;
+    return `<div class="bud-row">
+      <div>${n}</div>
+      <div class="bud-bar-track"><div class="bud-bar-fill ${over?'over':''}" style="width:${Math.min(100,pct)}%"></div></div>
+      <div class="amt ${over?'minus':''}">${fmtYen(c.food)}</div>
+    </div>`;
+  }).join('');
+
+  const jumpBtns = MONTH_NAMES.map((n,i)=>`<button onclick="go('m${i+1}')">${n}</button>`).join('');
+
+  return `
+  <div class="card">
+    <div class="washi"></div>
+    <h2>年間サマリー ${DATA.currentYear}</h2>
+    <p class="hint">全ての月の数字が自動集計されます。まずは各月ページに給与日前・月末の2回、入力してください。</p>
+    <div class="table-scroll">
+      <table class="year-tbl">
+        <thead><tr><th>項目</th>${theadCells}</tr></thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>食費・日用品の予算進捗</h2>
+    <p class="hint">月予算：<strong>${fmtYen(budget)}</strong>（「設定」で変更できます）</p>
+    ${budgetRows}
+  </div>
+
+  <div class="card">
+    <h2>各月へジャンプ</h2>
+    <div class="jump-grid">${jumpBtns}</div>
+  </div>
+  `;
+}
+function afterYearRender(){}
+
+/* ====================== 月ページ ====================== */
+function methodOptions(selected){
+  return DATA.settings.paymentMethods.map(pm=>`<option value="${escAttr(pm)}" ${pm===selected?'selected':''}>${escHtml(pm)}</option>`).join('');
+}
+function escHtml(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s){ return escHtml(s); }
+
+function renderFixedTable(mi, group, personLabel){
+  const m = currentMonths()[String(mi)];
+  const rows = m[group].map((r,idx)=>`
+    <tr>
+      <td class="item-cell"><input type="text" class="row-item-input" value="${escAttr(r.item)}" oninput="onRowChange(${mi},'${group}',${idx},'item',this.value)"></td>
+      <td class="amt"><input type="number" class="amt-input num" inputmode="numeric" value="${r.amount||0}" oninput="onRowChange(${mi},'${group}',${idx},'amount',this.value)"></td>
+      <td class="method-cell"><select class="method-select" onchange="onRowChange(${mi},'${group}',${idx},'method',this.value)">${methodOptions(r.method)}</select></td>
+      <td><button class="del-btn" title="この行を削除" onclick="removeRow(${mi},'${group}',${idx})">✕</button></td>
+    </tr>`).join('');
+  const subtotal = m[group].reduce((s,r)=>s+(Number(r.amount)||0),0);
+  return `
+  <div class="card">
+    <h2>${escHtml(personLabel)}の固定費</h2>
+    <div class="table-scroll">
+    <table class="ledger ledger-items">
+      <thead><tr><th>項目</th><th style="text-align:right">金額</th><th>支払い方法</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td>小計</td><td class="amt num" id="${group}-sub-${mi}">${fmtYen(subtotal)}</td><td></td><td></td></tr></tfoot>
+    </table>
+    </div>
+    <div class="btn-row"><button class="btn small" onclick="addRow(${mi},'${group}')">＋ 項目を追加</button></div>
+  </div>`;
+}
+
+function renderMonth(mi){
+  const m = currentMonths()[String(mi)];
+  const c = calcMonth(String(mi));
+  const prev = mi>1 ? mi-1 : 12;
+  const next = mi<12 ? mi+1 : 1;
+  const season = SEASON(mi);
+
+  const methodRows = DATA.settings.paymentMethods.map(pm=>
+    `<tr><td>${escHtml(pm)}</td><td class="amt num">${fmtYen(c.byMethod[pm]||0)}</td></tr>`).join('');
+
+  return `
+  <div class="tabbar">
+    <button onclick="go('year')">年間</button>
+    <button onclick="go('m${prev}')">◀ ${MONTH_NAMES[prev-1]}</button>
+    <button class="active" style="border-color:var(--${season})">${MONTH_NAMES[mi-1]}</button>
+    <button onclick="go('m${next}')">${MONTH_NAMES[next-1]} ▶</button>
+  </div>
+
+  <div class="card">
+    <div class="washi"></div>
+    <h2>${MONTH_NAMES[mi-1]}の家計簿</h2>
+    <p class="hint">青い枠のセルに入力してください。給与日前に収入・固定費、月末に食費・日用品を。</p>
+    <div class="sum-grid" id="summary-${mi}">
+      ${summaryCells(c)}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>収入（給与日前に入力）</h2>
+    <div class="form-grid">
+      <div class="field"><label>${escHtml(DATA.settings.personA)} 給与</label><input type="number" class="num" inputmode="numeric" value="${m.incomeA||0}" oninput="onIncomeChange(${mi},'incomeA',this.value)"></div>
+      <div class="field"><label>${escHtml(DATA.settings.personB)} 給与</label><input type="number" class="num" inputmode="numeric" value="${m.incomeB||0}" oninput="onIncomeChange(${mi},'incomeB',this.value)"></div>
+    </div>
+  </div>
+
+  ${renderFixedTable(mi, 'fixedA', DATA.settings.personA)}
+  ${renderFixedTable(mi, 'fixedB', DATA.settings.personB)}
+
+  <div class="card">
+    <h2>食費・日用品（月末に1回入力）</h2>
+    <div class="form-grid">
+      <div class="field"><label>PayPay合計 <span style="font-weight:400">（PayPayアプリの取引履歴から）</span></label><input type="number" class="num" inputmode="numeric" value="${m.food.paypay||0}" oninput="onFoodChange(${mi},'paypay',this.value)"></div>
+      <div class="field"><label>現金合計 <span style="font-weight:400">（引出額 − 月末の財布残高）</span></label><input type="number" class="num" inputmode="numeric" value="${m.food.cash||0}" oninput="onFoodChange(${mi},'cash',this.value)"></div>
+    </div>
+    <div class="status-msg ${c.budgetDiff>=0?'ok':'err'}" id="budget-msg-${mi}">${budgetMsg(c)}</div>
+  </div>
+
+  <div class="card">
+    <h2>支払い方法別</h2>
+    <p class="hint">支出合計と一致するか確認用です</p>
+    <div class="table-scroll">
+    <table class="ledger" id="method-table-${mi}">
+      <tbody>${methodRows}</tbody>
+      <tfoot><tr><td>合計</td><td class="amt num">${fmtYen(c.byMethodTotal)}</td></tr></tfoot>
+    </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>今月のメモ</h2>
+    <textarea oninput="onMemoChange(${mi},this.value)">${escHtml(m.memo||'')}</textarea>
+  </div>
+  `;
+}
+
+function summaryCells(c){
+  return `
+    <div class="sum-item"><div class="lbl">収入合計</div><div class="val num">${fmtYen(c.income)}</div></div>
+    <div class="sum-item"><div class="lbl">固定費合計</div><div class="val num">${fmtYen(c.fixed)}</div></div>
+    <div class="sum-item"><div class="lbl">食費・日用品</div><div class="val num">${fmtYen(c.food)}</div></div>
+    <div class="sum-item"><div class="lbl">支出合計</div><div class="val num">${fmtYen(c.expense)}</div></div>
+    <div class="sum-item ${c.savings<0?'minus':'plus'}"><div class="lbl">差引（貯蓄）</div><div class="val num">${fmtYen(c.savings)}</div></div>
+  `;
+}
+function budgetMsg(c){
+  if(c.budgetDiff>=0) return `予算まで残り ${fmtYen(c.budgetDiff)}`;
+  return `予算を ${fmtYen(Math.abs(c.budgetDiff))} オーバーしています`;
+}
+
+function afterMonthRender(mi){}
+
+/* ---- 変更ハンドラ（部分更新でフォーカスを保つ） ---- */
+function onRowChange(mi, group, idx, field, value){
+  const r = currentMonths()[String(mi)][group][idx];
+  r[field] = (field==='amount') ? Number(value)||0 : value;
+  saveLocal();
+  refreshMonth(mi, group);
+}
+function onIncomeChange(mi, field, value){
+  currentMonths()[String(mi)][field] = Number(value)||0;
+  saveLocal();
+  refreshMonth(mi);
+}
+function onFoodChange(mi, field, value){
+  currentMonths()[String(mi)].food[field] = Number(value)||0;
+  saveLocal();
+  refreshMonth(mi);
+}
+function onMemoChange(mi, value){
+  currentMonths()[String(mi)].memo = value;
+  saveLocal();
+}
+function addRow(mi, group){
+  const defMethod = DATA.settings.paymentMethods[0] || '';
+  currentMonths()[String(mi)][group].push({item:'', amount:0, method:defMethod});
+  saveLocal();
+  render();
+}
+function removeRow(mi, group, idx){
+  currentMonths()[String(mi)][group].splice(idx,1);
+  saveLocal();
+  render();
+}
+function refreshMonth(mi, group){
+  const c = calcMonth(String(mi));
+  const sumEl = document.getElementById('summary-'+mi);
+  if(sumEl) sumEl.innerHTML = summaryCells(c);
+  if(group){
+    const subEl = document.getElementById(group+'-sub-'+mi);
+    if(subEl) subEl.textContent = fmtYen(group==='fixedA'?c.fixedATotal:c.fixedBTotal);
+  }
+  const budEl = document.getElementById('budget-msg-'+mi);
+  if(budEl){ budEl.textContent = budgetMsg(c); budEl.className = 'status-msg ' + (c.budgetDiff>=0?'ok':'err'); }
+  const methodTable = document.getElementById('method-table-'+mi);
+  if(methodTable){
+    methodTable.querySelector('tbody').innerHTML = DATA.settings.paymentMethods.map(pm=>
+      `<tr><td>${escHtml(pm)}</td><td class="amt num">${fmtYen(c.byMethod[pm]||0)}</td></tr>`).join('');
+    methodTable.querySelector('tfoot').innerHTML = `<tr><td>合計</td><td class="amt num">${fmtYen(c.byMethodTotal)}</td></tr>`;
+  }
+}
+
+/* ====================== 設定ページ ====================== */
+function renderSettings(){
+  const cfg = loadCfg();
+  const pillList = DATA.settings.paymentMethods.map((pm,i)=>
+    `<span class="pill">${escHtml(pm)}<button onclick="removeMethod(${i})" title="削除">✕</button></span>`).join('');
+
+  return `
+  <div class="card">
+    <div class="washi"></div>
+    <h2>基本設定</h2>
+    <div class="form-grid">
+      <div class="field"><label>収入①の名前</label><input type="text" value="${escAttr(DATA.settings.personA)}" oninput="onSettingChange('personA',this.value)"></div>
+      <div class="field"><label>収入②の名前</label><input type="text" value="${escAttr(DATA.settings.personB)}" oninput="onSettingChange('personB',this.value)"></div>
+      <div class="field"><label>食費・日用品の月予算</label><input type="number" class="num" value="${DATA.settings.monthlyBudget||0}" oninput="onSettingChange('monthlyBudget',Number(this.value)||0)"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>年の管理</h2>
+    <p class="hint">新しい年を追加すると、固定費の項目名・支払い方法は今の年からそのまま引き継がれ、金額は下の「固定費のデフォルト金額」から入った状態で始まります。過去の年のデータはそのまま残ります。</p>
+    <div class="pill-list">${yearPillsHtml()}</div>
+    <div class="btn-row">
+      <input type="number" id="newYearInput" placeholder="例: ${Math.max(...Object.keys(DATA.years).map(Number))+1}" style="max-width:120px;">
+      <button class="btn small" onclick="addYearFromSettings()">＋ 年を追加</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>固定費のデフォルト金額</h2>
+    <p class="hint">ここで決めておいた金額は、まだ入力していない月（金額が0円のままの項目）に一括で反映できます。すでに金額を入力した月・項目は上書きされません。各月ページではこれまで通り自由に編集できます。</p>
+    ${renderFixedDefaultsGroup('fixedA', DATA.settings.personA)}
+    ${renderFixedDefaultsGroup('fixedB', DATA.settings.personB)}
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn primary" onclick="applyFixedDefaultsToAllMonths()">${DATA.currentYear}年の未入力項目に反映</button>
+    </div>
+    <div id="fixedDefaultsStatus"></div>
+  </div>
+
+  <div class="card">
+    <h2>支払方法マスタ</h2>
+    <p class="hint">ここで編集すると、全ての月のプルダウンに反映されます</p>
+    <div class="pill-list">${pillList}</div>
+    <div class="btn-row">
+      <input type="text" id="newMethodInput" placeholder="新しい支払方法名" style="max-width:220px;">
+      <button class="btn small" onclick="addMethod()">＋ 追加</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>GitHubで複数端末と同期</h2>
+    <p class="hint">非公開(private)リポジトリを作り、その中の1ファイル(例: data.json)にこの家計簿データを保存・読込します。トークンはこの端末のブラウザだけに保存され、外部には送信されません。</p>
+    <div class="form-grid">
+      <div class="field"><label>GitHubユーザー名 / Organization</label><input type="text" id="cfgOwner" value="${escAttr(cfg.owner||'')}" placeholder="例: taka-family"></div>
+      <div class="field"><label>リポジトリ名</label><input type="text" id="cfgRepo" value="${escAttr(cfg.repo||'')}" placeholder="例: kakeibo-2026"></div>
+      <div class="field"><label>ブランチ</label><input type="text" id="cfgBranch" value="${escAttr(cfg.branch||'main')}" placeholder="main"></div>
+      <div class="field"><label>データファイルのパス</label><input type="text" id="cfgPath" value="${escAttr(cfg.path||'data.json')}" placeholder="data.json"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Personal Access Token（Contents: Read/Write 権限）</label><input type="password" id="cfgToken" value="${escAttr(cfg.token||'')}" placeholder="github_pat_..."></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="saveGithubCfg()">設定を保存</button>
+      <button class="btn primary" onclick="githubSave()">GitHubへ保存（アップロード）</button>
+      <button class="btn" onclick="githubLoad()">GitHubから読み込む</button>
+    </div>
+    <p class="hint" style="margin-top:10px;">最終同期：<span id="lastSyncText">${fmtDateTime(cfg.lastSync)}</span></p>
+    <div id="githubStatus"></div>
+  </div>
+
+  <div class="card">
+    <h2>バックアップ</h2>
+    <p class="hint">GitHubを使わなくても、JSONファイルとして手元に保存・読込ができます</p>
+    <div class="btn-row">
+      <button class="btn" onclick="exportJson()">JSONファイルを書き出す</button>
+      <label class="btn" style="cursor:pointer;">JSONファイルを読み込む<input type="file" accept="application/json" style="display:none" onchange="importJson(this.files[0])"></label>
+      <button class="btn danger" onclick="resetAll()">データを初期状態に戻す</button>
+    </div>
+  </div>
+  `;
+}
+function afterSettingsRender(){}
+
+function yearPillsHtml(){
+  const years = Object.keys(DATA.years).map(Number).sort((a,b)=>a-b);
+  return years.map(y=>{
+    const active = y===DATA.currentYear;
+    return `<span class="pill" style="cursor:pointer;${active?'background:var(--indigo);color:#fff;border-color:var(--indigo-deep);':''}" onclick="switchYear(${y})">${y}年${years.length>1?`<button onclick="event.stopPropagation();deleteYear(${y})" title="この年のデータを削除">✕</button>`:''}</span>`;
+  }).join('');
+}
+function addYearFromSettings(){
+  const input = document.getElementById('newYearInput');
+  const y = parseInt(input.value, 10);
+  if(!y || y<2000 || y>2100){ alert('正しい年（西暦4桁）を入力してください'); return; }
+  if(DATA.years[String(y)]){ alert('その年はすでに存在します'); switchYear(y); return; }
+  addYear(y);
+}
+function addYear(y){
+  const templateYear = DATA.currentYear;
+  DATA.years[String(y)] = { months: buildBlankYearMonths(templateYear) };
+  DATA.currentYear = y;
+  saveLocal();
+  location.hash = 'year';
+  render();
+}
+function buildBlankYearMonths(templateYear){
+  const src = DATA.years[String(templateYear)] && DATA.years[String(templateYear)].months;
+  const defaults = DATA.settings.fixedDefaults;
+  const withDefaultAmount = (rows, defGroup) => rows.map(r=>{
+    const def = defGroup && defGroup.find(d=>d.item===r.item);
+    return {item:r.item, amount: def ? (Number(def.amount)||0) : 0, method:r.method};
+  });
+  const result = {};
+  for(let i=1;i<=12;i++){
+    const key = String(i);
+    const base = (src && (src[key] || src['1'])) || null;
+    result[key] = base ? {
+      incomeA:0,
+      incomeB:0,
+      fixedA: withDefaultAmount(base.fixedA, defaults && defaults.fixedA),
+      fixedB: withDefaultAmount(base.fixedB, defaults && defaults.fixedB),
+      food:{paypay:0, cash:0},
+      memo:''
+    } : {incomeA:0, incomeB:0, fixedA:[], fixedB:[], food:{paypay:0,cash:0}, memo:''};
+  }
+  return result;
+}
+function deleteYear(y){
+  if(Object.keys(DATA.years).length<=1){ alert('最後の1年は削除できません'); return; }
+  if(!confirm(y+'年のデータを削除しますか？元に戻せません。')) return;
+  delete DATA.years[String(y)];
+  if(DATA.currentYear === y){
+    DATA.currentYear = Math.max(...Object.keys(DATA.years).map(Number));
+  }
+  saveLocal();
+  render();
+}
+
+/* ---- 固定費のデフォルト金額 ---- */
+function ensureFixedDefaults(){
+  if(!DATA.settings.fixedDefaults){
+    const months = currentMonths();
+    const src = months['1'] || months[Object.keys(months)[0]];
+    DATA.settings.fixedDefaults = {
+      fixedA: src ? src.fixedA.map(r=>({item:r.item, amount:r.amount, method:r.method})) : [],
+      fixedB: src ? src.fixedB.map(r=>({item:r.item, amount:r.amount, method:r.method})) : []
+    };
+    saveLocal();
+  }
+  return DATA.settings.fixedDefaults;
+}
+function renderFixedDefaultsGroup(group, personLabel){
+  const defaults = ensureFixedDefaults()[group];
+  const rows = defaults.map((r,idx)=>`
+    <tr>
+      <td class="item-cell"><input type="text" class="row-item-input" value="${escAttr(r.item)}" oninput="onFixedDefaultChange('${group}',${idx},'item',this.value)"></td>
+      <td class="amt"><input type="number" class="amt-input num" inputmode="numeric" value="${r.amount||0}" oninput="onFixedDefaultChange('${group}',${idx},'amount',this.value)"></td>
+      <td class="method-cell"><select class="method-select" onchange="onFixedDefaultChange('${group}',${idx},'method',this.value)">${methodOptions(r.method)}</select></td>
+      <td><button class="del-btn" title="この項目を削除" onclick="removeFixedDefaultRow('${group}',${idx})">✕</button></td>
+    </tr>`).join('');
+  return `
+    <h3 style="font-size:.92rem;">${escHtml(personLabel)}の固定費</h3>
+    <div class="table-scroll">
+    <table class="ledger ledger-items">
+      <thead><tr><th>項目</th><th style="text-align:right">金額</th><th>支払い方法</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div class="btn-row"><button class="btn small" onclick="addFixedDefaultRow('${group}')">＋ 項目を追加</button></div>
+  `;
+}
+function onFixedDefaultChange(group, idx, field, value){
+  const row = ensureFixedDefaults()[group][idx];
+  row[field] = (field==='amount') ? Number(value)||0 : value;
+  saveLocal();
+}
+function addFixedDefaultRow(group){
+  const defMethod = DATA.settings.paymentMethods[0] || '';
+  ensureFixedDefaults()[group].push({item:'', amount:0, method:defMethod});
+  saveLocal();
+  render();
+}
+function removeFixedDefaultRow(group, idx){
+  ensureFixedDefaults()[group].splice(idx,1);
+  saveLocal();
+  render();
+}
+function applyFixedDefaultsToAllMonths(){
+  const defaults = ensureFixedDefaults();
+  if(!confirm(`${DATA.currentYear}年のうち、まだ金額が0円のままの項目にだけデフォルト金額を反映します。すでに金額を入力した月・項目は変更されません。よろしいですか？`)) return;
+  const months = currentMonths();
+  ['fixedA','fixedB'].forEach(group=>{
+    defaults[group].forEach(def=>{
+      if(!def.item) return;
+      for(let i=1;i<=12;i++){
+        const m = months[String(i)];
+        if(!m) continue;
+        const row = m[group].find(r=>r.item===def.item);
+        if(row){
+          if(!row.amount) row.amount = Number(def.amount)||0;
+        } else {
+          m[group].push({item:def.item, amount:Number(def.amount)||0, method:def.method});
+        }
+      }
+    });
+  });
+  saveLocal();
+  render();
+  showFixedDefaultsStatus('反映しました', 'ok');
+}
+function showFixedDefaultsStatus(msg, kind){
+  const el = document.getElementById('fixedDefaultsStatus');
+  if(!el) return;
+  el.innerHTML = `<div class="status-msg ${kind}">${escHtml(msg)}</div>`;
+}
+
+function onSettingChange(key, value){
+  DATA.settings[key] = value;
+  saveLocal();
+  if(key==='personA' || key==='personB'){ /* labels only affect month view, no immediate refresh needed here */ }
+}
+function addMethod(){
+  const input = document.getElementById('newMethodInput');
+  const v = (input.value||'').trim();
+  if(!v) return;
+  if(DATA.settings.paymentMethods.includes(v)){ input.value=''; return; }
+  DATA.settings.paymentMethods.push(v);
+  saveLocal();
+  render();
+}
+function removeMethod(i){
+  if(!confirm('この支払方法を削除しますか？（すでに使われている項目のプルダウンは空欄になります）')) return;
+  DATA.settings.paymentMethods.splice(i,1);
+  saveLocal();
+  render();
+}
+
+function exportJson(){
+  const blob = new Blob([JSON.stringify(DATA,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `kakeibo_backup_${Date.now()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function importJson(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const d = migrateData(JSON.parse(reader.result));
+      if(!d || !d.years) throw new Error('形式が正しくありません');
+      DATA = d; saveLocal(); render();
+      showGithubStatus('読み込みました', 'ok');
+    }catch(e){
+      alert('読み込みに失敗しました: ' + e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+function resetAll(){
+  if(!confirm('本当に初期状態（サンプルデータ）に戻しますか？現在の入力内容は失われます。')) return;
+  DATA = defaultData();
+  saveLocal();
+  render();
+}
+
+/* ====================== GitHub 同期 ====================== */
+function b64EncodeUnicode(str){
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_,p1)=>String.fromCharCode('0x'+p1)));
+}
+function b64DecodeUnicode(str){
+  return decodeURIComponent(atob(str).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+}
+function readCfgForm(){
+  return {
+    owner: document.getElementById('cfgOwner').value.trim(),
+    repo: document.getElementById('cfgRepo').value.trim(),
+    branch: document.getElementById('cfgBranch').value.trim() || 'main',
+    path: document.getElementById('cfgPath').value.trim() || 'data.json',
+    token: document.getElementById('cfgToken').value.trim(),
+  };
+}
+function saveGithubCfg(){
+  const form = readCfgForm();
+  const prev = loadCfg();
+  const cfg = Object.assign({}, prev, form);
+  saveCfg(cfg);
+  showGithubStatus('設定を保存しました（この端末のブラウザ内）', 'ok');
+}
+function showGithubStatus(msg, kind){
+  const el = document.getElementById('githubStatus');
+  if(!el) return;
+  el.innerHTML = `<div class="status-msg ${kind}">${escHtml(msg)}</div>`;
+}
+function apiUrl(cfg){
+  return `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${cfg.path.split('/').map(encodeURIComponent).join('/')}`;
+}
+async function githubSave(){
+  const form = readCfgForm();
+  if(!form.owner || !form.repo || !form.token){ showGithubStatus('ユーザー名・リポジトリ名・トークンを入力してください', 'err'); return; }
+  saveCfg(Object.assign({}, loadCfg(), form));
+  showGithubStatus('GitHubに保存中…', 'info');
+  try{
+    let sha = undefined;
+    // 既存ファイルのshaを取得（あれば）
+    const getRes = await fetch(apiUrl(form)+`?ref=${encodeURIComponent(form.branch)}`, {
+      headers:{ 'Authorization':`Bearer ${form.token}`, 'Accept':'application/vnd.github+json' }
+    });
+    if(getRes.status === 200){
+      const j = await getRes.json();
+      sha = j.sha;
+    } else if(getRes.status !== 404){
+      const t = await getRes.text();
+      throw new Error(`確認に失敗 (${getRes.status}): ${t.slice(0,200)}`);
+    }
+    const content = b64EncodeUnicode(JSON.stringify(DATA, null, 2));
+    const body = { message:`家計簿データ更新 ${new Date().toISOString()}`, content, branch: form.branch };
+    if(sha) body.sha = sha;
+    const putRes = await fetch(apiUrl(form), {
+      method:'PUT',
+      headers:{ 'Authorization':`Bearer ${form.token}`, 'Accept':'application/vnd.github+json', 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+    if(!putRes.ok){
+      const t = await putRes.text();
+      throw new Error(`保存に失敗 (${putRes.status}): ${t.slice(0,300)}`);
+    }
+    const putJson = await putRes.json();
+    const cfg = Object.assign({}, loadCfg(), form, { lastSync:new Date().toISOString(), lastSha: putJson.content && putJson.content.sha });
+    saveCfg(cfg);
+    DIRTY = false;
+    updateSyncBadge();
+    document.getElementById('lastSyncText').textContent = fmtDateTime(cfg.lastSync);
+    showGithubStatus('GitHubへの保存が完了しました', 'ok');
+  }catch(e){
+    showGithubStatus(e.message, 'err');
+  }
+}
+async function githubLoad(){
+  const form = readCfgForm();
+  if(!form.owner || !form.repo || !form.token){ showGithubStatus('ユーザー名・リポジトリ名・トークンを入力してください', 'err'); return; }
+  saveCfg(Object.assign({}, loadCfg(), form));
+  if(DIRTY && !confirm('この端末にまだGitHubへ保存していない変更があります。読み込むと上書きされますが続けますか？')) return;
+  showGithubStatus('GitHubから読み込み中…', 'info');
+  try{
+    const getRes = await fetch(apiUrl(form)+`?ref=${encodeURIComponent(form.branch)}`, {
+      headers:{ 'Authorization':`Bearer ${form.token}`, 'Accept':'application/vnd.github+json' }
+    });
+    if(getRes.status === 404){ throw new Error('ファイルが見つかりません。先に「GitHubへ保存」を1度実行してください'); }
+    if(!getRes.ok){
+      const t = await getRes.text();
+      throw new Error(`読み込みに失敗 (${getRes.status}): ${t.slice(0,300)}`);
+    }
+    const j = await getRes.json();
+    const text = b64DecodeUnicode(j.content.replace(/\n/g,''));
+    const d = migrateData(JSON.parse(text));
+    if(!d || !d.years) throw new Error('データの形式が正しくありません');
+    DATA = d;
+    saveLocal();
+    DIRTY = false;
+    const cfg = Object.assign({}, loadCfg(), form, { lastSync:new Date().toISOString(), lastSha:j.sha });
+    saveCfg(cfg);
+    updateSyncBadge();
+    render();
+    showGithubStatus('GitHubから読み込みました', 'ok');
+    const t = document.getElementById('lastSyncText'); if(t) t.textContent = fmtDateTime(cfg.lastSync);
+  }catch(e){
+    showGithubStatus(e.message, 'err');
+  }
+}
+function updateSyncBadge(){
+  const badge = document.getElementById('headerSync');
+  if(!badge) return;
+  const cfg = loadCfg();
+  if(!cfg.owner || !cfg.token){ badge.textContent = 'GitHub未設定'; return; }
+  badge.textContent = DIRTY ? '● 未保存の変更あり' : ('✓ 同期済 ' + fmtDateTime(cfg.lastSync));
+}
+
+/* ====================== 使い方ページ ====================== */
+function renderHelp(){
+  return `
+  <div class="card">
+    <div class="washi"></div>
+    <h2>この家計簿の使い方</h2>
+  </div>
+  <div class="card">
+    <div class="help-block">
+      <h3>基本のルール</h3>
+      <p>青枠の入力欄だけ入力します。合計や差引は自動で計算されます。</p>
+    </div>
+    <div class="help-block">
+      <h3>入力するタイミング</h3>
+      <ol>
+        <li>給与日の前に1回 → 収入・固定費を入力</li>
+        <li>月末に1回 → 食費・日用品（PayPay合計と現金合計）を入力</li>
+      </ol>
+      <p>毎日入力する必要はありません。月2回だけです。</p>
+    </div>
+    <div class="help-block">
+      <h3>食費・日用品の出し方</h3>
+      <ul>
+        <li>PayPay合計：PayPayアプリ → 取引履歴 → 当月の支出合計を転記</li>
+        <li>現金合計：給与日に引き出した金額 − 月末に財布に残っていた金額</li>
+      </ul>
+    </div>
+    <div class="help-block">
+      <h3>支払い方法別集計</h3>
+      <p>各月ページの下部に、口座・支払い方法ごとの自動集計があります。支出合計と一致するか確認に使えます。支払方法の選択肢は「設定」ページでいつでも追加・削除できます。</p>
+    </div>
+    <div class="help-block">
+      <h3>月予算の変更</h3>
+      <p>「設定」ページの月予算を変更すると、全ての月・年間サマリーに反映されます。</p>
+    </div>
+    <div class="help-block">
+      <h3>複数端末での利用</h3>
+      <ol>
+        <li>GitHubで非公開(private)リポジトリを作成する</li>
+        <li>GitHub の Settings → Developer settings → Personal access tokens で、対象リポジトリの Contents を Read and write に設定したトークンを発行する</li>
+        <li>「設定」ページにユーザー名・リポジトリ名・トークンを入力し「GitHubへ保存」を押す</li>
+        <li>他の端末でこのページを開き、同じ設定を入力して「GitHubから読み込む」を押す</li>
+      </ol>
+      <p>入力するたびにこの端末には自動保存されますが、他の端末と共有するには「GitHubへ保存」を押してください。他の端末の変更を取り込むには「GitHubから読み込む」を押してください。</p>
+    </div>
+    <div class="help-block">
+      <h3>続けるコツ</h3>
+      <ul>
+        <li>完璧を目指さない。1か月飛んでも気にしない。</li>
+        <li>入力する日を決める（例：給与日、月末の日曜日）。</li>
+      </ul>
+    </div>
+  </div>
+  `;
+}
+
+/* ====================== 初期化 ====================== */
+function init(){
+  render();
+  updateSyncBadge();
+}
+init();
+</script>
+</body>
+</html>
